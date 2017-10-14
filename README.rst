@@ -4,7 +4,7 @@ SaltStack Lambda Client for AWS Cloudformation Custom Resource
 Testing
 -------
 
-pip install python-lambda-local
+pip3 install python-lambda-local
 
 python-lambda-local event.json
 
