@@ -58,8 +58,6 @@ def return_s3_response(status, data=None, reason=None):
 
     json_responseBody = json.dumps(responseBody)
    
-    print("Response body:\n{}".format(json_responseBody))
-
     headers = {
         'content-type' : '', 
         'content-length' : str(len(json_responseBody))
@@ -69,14 +67,13 @@ def return_s3_response(status, data=None, reason=None):
         response = requests.put(responseUrl,
                                 data=json_responseBody,
                                 headers=headers)
-        print("Status code: {}".format(response.reason))
     except Exception as e:
         raise SystemExit("{}".format(e))
 
-    if status != "SUCCESS":
-        sys.exit(1)
-    else:
+    if status == "SUCCESS":
         sys.exit(0)
+    else:
+        sys.exit(1)
 
 def local_client():
     '''
@@ -115,20 +112,17 @@ def exec_rest_call(args):
     try: 
         d = urllib.request.urlopen(request, context=context).read()
     except urllib.error.HTTPError as e:
-        print("Error in request to salt-api: {}".format(e.read()))
+        sys.stderr.write("Error in request to salt-api: {}".format(e.read()))
         return_s3_response("FAILED", data=None, reason=e.read())
-        sys.exit(1)
     except urllib.error.URLError as e:
-        print("Error in request to salt-api: {}".format(e.reason))
+        sys.stderr.write("Error in request to salt-api: {}".format(e.reason))
         return_s3_response("FAILED", data=None, reason=str(e.reason()))
-        sys.exit(1)
 
     try:
         return json.loads(d)
     except:
-        print("Return data is not JSON")
+        sys.stderr.write("Return data is not JSON")
         return_s3_response("FAILED", data=None, reason="Return data is not JSON")
-        sys.exit(1)
 
 def get_token():
     '''
@@ -146,17 +140,11 @@ def get_token():
         auth = urllib.request.urlopen(url, data, context=context).read()
         return json.loads(auth)['return'][0]['token']
     except urllib.error.HTTPError as e:
-        print("Error Getting Token: {}".format(e.read()))
+        sys.stderr.write("Error Getting Token: {}".format(e.read()))
         return_s3_response("FAILED", data=None, reason=e.read())
-        sys.exit(1)
     except urllib.error.URLError as e:
-        print("Error Getting Token: " + str(e.reason))
+        sys.stderr.write("Error Getting Token: " + str(e.reason))
         return_s3_response("failed", data=none, reason=e.reason())
-        sys.exit(1)
-    except:
-        print("Error Getting Token")
-        return_s3_response("FAILED", data=None, reason="Unknown error in salt-api auth token request")
-        sys.exit(1)
 
 def normalize_local(results):
     '''
@@ -220,7 +208,6 @@ def handler(event, context):
         if not results:
             sys.stderr.write('ERROR: No return received\n')
             return_s3_response("FAILED", data=None, reason="ERROR: No return received")
-            sys.exit(1)
     
         opts = {"color": True, "color_theme": None, "extension_modules": "/"}
         if state_output == "changes":
@@ -249,8 +236,5 @@ def handler(event, context):
         
         if failure:
             return_s3_response("FAILED", data=results, reason="False results found in return data")
-            sys.exit(1)
         else:
             return_s3_response("SUCCESS", data=results)
-            sys.exit(0)
-
