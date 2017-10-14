@@ -1,10 +1,6 @@
 #!/usr/bin/python3
 '''
 Send a message to a SaltStack API modified for AWS Lambda to be used as an AWS Cloudformation Custom Resource
-
-TODO:
-    - figure out what inputs the event will have for cloudformation custom resources
-    - figure out what outputs we should have for cloudformation custom resources
 '''
 import urllib.request, urllib.parse, urllib.error, json, ssl, sys
 from botocore.vendored import requests
@@ -12,7 +8,7 @@ from botocore.vendored import requests
 try:
     import salt.output as salt_outputter
 except ImportError:
-    raise ImportError("the salt python module is required.  Install it with 'pip install salt' on the TeamCity agent.  The salt-minion and salt-master packages are not required.")
+    raise ImportError("the salt python module is required.  Install it with 'pip3 install salt' on the TeamCity agent.  The salt-minion and salt-master packages are not required.")
 
 def __init__(e):
     '''
@@ -49,7 +45,6 @@ def return_s3_response(status, data=None, reason=None):
     responseBody = {}
     responseBody['Status'] = status
     responseBody['Reason'] = reason
-    #responseBody['PhysicalResourceId'] = physicalResourceId or context.log_stream_name
     responseBody['StackId'] = event['StackId']
     responseBody['RequestId'] = event['RequestId']
     responseBody['LogicalResourceId'] = event['LogicalResourceId']
@@ -80,6 +75,7 @@ def local_client():
     This will run a normal salt command using the saltstack localclient.
     Example: salt 'minion' some.module
     '''
+
     args = {
         'tgt': target,
         'expr_form': expr_form,
@@ -100,9 +96,9 @@ def local_client():
 
 def exec_rest_call(args):
     '''
-    Execute the restful call to the saltmaster
+    Execute the API call to the salt-api
     '''
-    #Login and get a token
+
     token = get_token()
     headers = { 'X-Auth-Token' : token, 'Accept' : 'application/json'}
     data = urllib.parse.urlencode(args).encode("utf-8")
@@ -126,8 +122,9 @@ def exec_rest_call(args):
 
 def get_token():
     '''
-    Login and get a auth token from the salt master
+    Get a auth token from the salt-api
     '''
+
     url = salturl + '/login'
     data = urllib.parse.urlencode({
         'username': username,
@@ -151,6 +148,7 @@ def normalize_local(results):
     Data is returned in different structure when in batch mode: https://github.com/saltstack/salt/issues/32459
     Make these results the same shape as batch returns here
     '''
+
     e = {"return": []}
     for key, value in results['return'][0].items():
         e['return'].append({key:value })
@@ -159,9 +157,9 @@ def normalize_local(results):
 def valid_return(return_data):
     '''
     Check the return data for any failures.  Since every salt module returns data in a different manner this will be hard to do accurately.
-    1.  If the function is a state.appply, state.sls or state.highstate return true only if all state id's return true
-    2.  For any other function look for a return of true
-    *.  Otherwise return false
+    Return false if any function id returns false in state.apply, state.sls or state.highstate
+    Return false if any other function returns false
+    Otherwise return true
     '''
 
     failure = False
@@ -214,7 +212,6 @@ def handler(event, context):
             opts.update({"state_verbose": False})
         else:
             opts.update({"state_verbose": True})
-        #local returns comes back in a weird shape.  But batch returns are ok.  Juts make all returns look like batch.  I still need to test this with subset
         if not batch_size:
             results = normalize_local(results)
         if function.startswith('state'):
