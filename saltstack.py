@@ -49,11 +49,12 @@ def return_s3_response(status, data=None, reason=None):
     responseBody = {}
     responseBody['Status'] = status
     responseBody['Reason'] = reason
-    responseBody['PhysicalResourceId'] = physicalResourceId or context.log_stream_name
+    #responseBody['PhysicalResourceId'] = physicalResourceId or context.log_stream_name
     responseBody['StackId'] = event['StackId']
     responseBody['RequestId'] = event['RequestId']
     responseBody['LogicalResourceId'] = event['LogicalResourceId']
     responseBody['Data'] = data
+    responseUrl = event['ResponseURL']
 
     json_responseBody = json.dumps(responseBody)
    
@@ -106,34 +107,29 @@ def exec_rest_call(args):
     '''
     #Login and get a token
     token = get_token()
-    headers = { 'X-Auth-Token' : token, 'Accept' : 'application/json', 'Content-Type' : 'application/json' }
+    headers = { 'X-Auth-Token' : token, 'Accept' : 'application/json'}
     data = urllib.parse.urlencode(args).encode("utf-8")
-
     context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
     request = urllib.request.Request(salturl, data, headers=headers)
 
     try: 
-        d = urllib.request.urlopen(request, timeout=3600, context=context).read()
+        d = urllib.request.urlopen(request, context=context).read()
     except urllib.error.HTTPError as e:
-        print("Error in API Call: " + e.read())
+        print("Error in request to salt-api: {}".format(e.read()))
         return_s3_response("FAILED", data=None, reason=e.read())
         sys.exit(1)
     except urllib.error.URLError as e:
-        print("Error in API Call: {}" + str(e.reason))
-        return_s3_response("FAILED", data=None, reason=e.reason())
-        sys.exit(1)
-    except: 
-        print("Error Getting in API Call")
-        return_s3_response("FAILED", data=None, reason="Unknown error in salt-api request")
+        print("Error in request to salt-api: {}".format(e.reason))
+        return_s3_response("FAILED", data=None, reason=str(e.reason()))
         sys.exit(1)
 
-    #print("Raw Return:" +d)
     try:
         return json.loads(d)
     except:
-    #TODO: Cannot exit for failure.  must send s3 object with status code and REASON
         print("Return data is not JSON")
+        return_s3_response("FAILED", data=None, reason="Return data is not JSON")
         sys.exit(1)
+
 def get_token():
     '''
     Login and get a auth token from the salt master
@@ -168,7 +164,7 @@ def normalize_local(results):
     Make these results the same shape as batch returns here
     '''
     e = {"return": []}
-    for key, value in results['return'][0].iteritems():
+    for key, value in results['return'][0].items():
         e['return'].append({key:value })
     return e
 
@@ -180,7 +176,7 @@ def valid_return(return_data):
     *.  Otherwise return false
     '''
 
-    failure = 0
+    failure = False
     if function.startswith('state'):
         if type(return_data) is not dict:
             if type(return_data) is list:
@@ -188,30 +184,30 @@ def valid_return(return_data):
                     sys.stderr.write(error+'\n')
             elif type(return_data) is str:
                 sys.stderr.write(return_data)
-            failure = 1
+            failure = True
         else:
             if return_data['return']:
                 for miniondata in return_data['return']:
-                    for minion, data in miniondata.iteritems():
+                    for minion, data in miniondata.items():
                         if type(data) is not dict:
                             sys.stderr.write(minion+': '+str(data)+'\n')
-                            failure = 1
+                            failure = True
                         else:
                             if "retcode" in data:
                                 if data["retcode"] != 0:
-                                    failure = 1
+                                    failure = True
                             else:
-                                for state, results in data.iteritems():
+                                for state, results in data.items():
                                     if results['result'] == False:
-                                        failure = 1
+                                        failure = True
             else:
                 sys.stderr.write('ERROR: No minions responded\n')
-                failure = 1
+                failure = True
     else:
         for miniondata in return_data['return']:
-            for minion, data in miniondata.iteritems():
+            for minion, data in miniondata.items():
                 if data == False:
-                    failure = 1
+                    failure = True
     return(failure)
 
 def handler(event, context):
@@ -223,8 +219,8 @@ def handler(event, context):
     
         if not results:
             sys.stderr.write('ERROR: No return received\n')
-            #TODO: Cannot exit for failure.  must send s3 object with status code and REASON
-            sys.exit(2)
+            return_s3_response("FAILED", data=None, reason="ERROR: No return received")
+            sys.exit(1)
     
         opts = {"color": True, "color_theme": None, "extension_modules": "/"}
         if state_output == "changes":
@@ -240,11 +236,21 @@ def handler(event, context):
             out=None
     
         for minion_result in results['return']:
-            for minion, data in minion_result.iteritems():
-                if "ret" in data:
-                    data[minion] = data.pop('ret')
-                    salt_outputter.display_output(data, out=out, opts=opts)
+            for minion, data in minion_result.items():
+                if function.startswith('state'):
+                  if "ret" in data:
+                      data[minion] = data.pop('ret')
+                      salt_outputter.display_output(data, out=out, opts=opts)
                 else:
                     salt_outputter.display_output(minion_result, out=out, opts=opts)
+        
 
-        sys.exit(valid_return(results))
+        failure = valid_return(results)
+        
+        if failure:
+            return_s3_response("FAILED", data=results, reason="False results found in return data")
+            sys.exit(1)
+        else:
+            return_s3_response("SUCCESS", data=results)
+            sys.exit(0)
+
