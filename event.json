@@ -1,0 +1,23 @@
+{
+  "StackId": "arn:aws:cloudformation:us-west-2:EXAMPLE/stack-name/guid",
+  "ResponseURL": "http://pre-signed-S3-url-for-response",
+  "ResourceProperties": {
+    "SaltClient": "local",
+    "SaltUrl": "http://localhost:8000",
+    "Eauth": "pam",
+    "Username": "test",
+    "Password": "password1",
+    "Target": "*",
+    "ExprForm": "glob",
+    "Function": "test.ping",
+    "Arguments": "",
+    "BatchSize": "",
+    "Subset": "",
+    "Kwargs": "",
+    "StateOutput": ""
+  },
+  "RequestType": "Create",
+  "ResourceType": "Custom::SaltStack",
+  "RequestId": "123456789",
+  "LogicalResourceId": "MyTestResource"
+}
