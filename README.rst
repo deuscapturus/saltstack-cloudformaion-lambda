@@ -6,7 +6,7 @@ Testing
 
 pip3 install python-lambda-local
 
-python-lambda-local event.json
+python-lambda-local -t 30 src/main.py event.json
 
 
 
