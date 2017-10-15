@@ -198,6 +198,13 @@ def valid_return(return_data):
                     failure = True
     return(failure)
 
+def listdict_to_dict(listdict):
+
+    return_dict = {}
+    for d in listdict:
+        return_dict.update(d)
+    return return_dict
+
 def handler(event, context):
 
     __init__(event)
@@ -238,6 +245,6 @@ def handler(event, context):
         failure = valid_return(results)
         
         if failure:
-            return_s3_response("FAILED", data=results, reason="False results found in return data")
+            return_s3_response("FAILED", data=listdict_to_dict(results.get('return')), reason="False results found in return data")
         else:
-            return_s3_response("SUCCESS", data=results)
+            return_s3_response("SUCCESS", data=listdict_to_dict(results.get('return')))
