@@ -142,7 +142,7 @@ def get_token():
         return_s3_response("FAILED", data=None, reason=e.read())
     except urllib.error.URLError as e:
         sys.stderr.write("Error Getting Token: " + str(e.reason))
-        return_s3_response("failed", data=None, reason=e.reason())
+        return_s3_response("FAILED", data=None, reason=e.reason())
 
 def normalize_local(results):
     '''
