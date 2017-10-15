@@ -36,7 +36,7 @@ def __init__(e):
     if batch_size and subset:
         return_s3_response("FAILED", None, 'SALTBATCHSIZE and SALTSUBSET cannot be used together.  Erase one of them please')
 
-def return_s3_response(status, data=None, reason=None):
+def return_s3_response(status, data={}, reason="None"):
     '''
     Send response to the presigned s3 bucket provided
     by the lambda event.
@@ -48,6 +48,7 @@ def return_s3_response(status, data=None, reason=None):
     responseBody['StackId'] = event['StackId']
     responseBody['RequestId'] = event['RequestId']
     responseBody['LogicalResourceId'] = event['LogicalResourceId']
+    responseBody['PhysicalResourceId'] = event['StackId']
     responseBody['Data'] = data
     responseUrl = event['ResponseURL']
 
@@ -142,7 +143,7 @@ def get_token():
         return_s3_response("FAILED", data=None, reason=e.read())
     except urllib.error.URLError as e:
         sys.stderr.write("Error Getting Token: " + str(e.reason))
-        return_s3_response("FAILED", data=None, reason=e.reason())
+        return_s3_response("FAILED", data=None, reason=str(e.reason))
 
 def normalize_local(results):
     '''
@@ -200,6 +201,10 @@ def valid_return(return_data):
 def handler(event, context):
 
     __init__(event)
+
+    #Always succeed on deletes
+    if event['RequestType'] == "Delete":
+        return_s3_response("SUCCESS", data=None)
     
     if saltclient == 'local':
         results = local_client()
