@@ -52,6 +52,7 @@ def return_s3_response(status, data=None, reason=None):
     responseUrl = event['ResponseURL']
 
     json_responseBody = json.dumps(responseBody)
+    print("json_responseBody: {}\n\n".format(json_responseBody))
    
     headers = {
         'content-type' : '', 
