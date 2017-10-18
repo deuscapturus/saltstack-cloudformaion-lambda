@@ -28,6 +28,7 @@ def __init__(e):
     expr_form = event['ResourceProperties'].get('ExprForm')
     function = event['ResourceProperties'].get('Function')
     arguments = event['ResourceProperties'].get('Arguments')
+    pillar = event['ResourceProperties'].get('Pillar', "{}")
     batch_size = event['ResourceProperties'].get('BatchSize')
     subset = event['ResourceProperties'].get('Subset')
     kwargs = event['ResourceProperties'].get('Kwargs')
@@ -94,6 +95,17 @@ def local_client():
     if subset:
         args['sub'] = subset
         args['client'] = 'local_subset'
+
+    if function.startswith('state'):
+        try:
+            pillar_dict = json.loads(pillar)
+        except:
+            return_s3_response("FAILED", data=None, reason="Pillar is not JSON")
+        pillar_dict.update({"cloudformation-request-type": event['RequestType'] })
+        pillar_dict.update({"cloudformation-stack-id": event['StackId'] })
+
+        args['arg'].append('pillar='+json.dumps(pillar_dict))
+
     return exec_rest_call(args)
 
 def exec_rest_call(args):
@@ -150,6 +162,9 @@ def normalize_local(results):
     Data is returned in different structure when in batch mode: https://github.com/saltstack/salt/issues/32459
     Make these results the same shape as batch returns here
     '''
+    
+    if type(results['return'][0]) is not dict:
+        return results
 
     e = {"return": []}
     for key, value in results['return'][0].items():
@@ -165,32 +180,29 @@ def valid_return(return_data):
     '''
 
     failure = False
+
+    if type(return_data.get('return')[0]) is not dict:
+        failure = True
+        return failure
+
     if function.startswith('state'):
-        if type(return_data) is not dict:
-            if type(return_data) is list:
-                for error in return_data:
-                    sys.stderr.write(error+'\n')
-            elif type(return_data) is str:
-                sys.stderr.write(return_data)
-            failure = True
-        else:
-            if return_data['return']:
-                for miniondata in return_data['return']:
-                    for minion, data in miniondata.items():
-                        if type(data) is not dict:
-                            sys.stderr.write(minion+': '+str(data)+'\n')
-                            failure = True
+        if return_data['return']:
+            for miniondata in return_data['return']:
+                for minion, data in miniondata.items():
+                    if type(data) is not dict:
+                        sys.stderr.write(minion+': '+str(data)+'\n')
+                        failure = True
+                    else:
+                        if "retcode" in data:
+                            if data["retcode"] != 0:
+                                failure = True
                         else:
-                            if "retcode" in data:
-                                if data["retcode"] != 0:
+                            for state, results in data.items():
+                                if results['result'] == False:
                                     failure = True
-                            else:
-                                for state, results in data.items():
-                                    if results['result'] == False:
-                                        failure = True
-            else:
-                sys.stderr.write('ERROR: No minions responded\n')
-                failure = True
+        else:
+            sys.stderr.write('ERROR: No minions responded\n')
+            failure = True
     else:
         for miniondata in return_data['return']:
             for minion, data in miniondata.items():
@@ -200,6 +212,8 @@ def valid_return(return_data):
 
 def listdict_to_dict(listdict):
 
+    if type(listdict[0]) is not dict:
+        return listdict
     return_dict = {}
     for d in listdict:
         return_dict.update(d)
@@ -209,8 +223,8 @@ def handler(event, context):
 
     __init__(event)
 
-    #Always succeed on deletes
-    if event['RequestType'] == "Delete":
+    #Always succeed on delete events on non-state executions
+    if event['RequestType'] == "Delete" and not function.startswith('state'):
         return_s3_response("SUCCESS", data=None)
     
     if saltclient == 'local':
@@ -233,13 +247,16 @@ def handler(event, context):
             out=None
     
         for minion_result in results['return']:
-            for minion, data in minion_result.items():
-                if function.startswith('state'):
-                  if "ret" in data:
-                      data[minion] = data.pop('ret')
-                      salt_outputter.display_output(data, out=out, opts=opts)
-                else:
-                    salt_outputter.display_output(minion_result, out=out, opts=opts)
+            if type(results['return'][0]) is not dict:
+                salt_outputter.display_output(results, out=out, opts=opts)
+            else:
+                for minion, data in minion_result.items():
+                    if function.startswith('state'):
+                      if "ret" in data:
+                          data[minion] = data.pop('ret')
+                          salt_outputter.display_output(data, out=out, opts=opts)
+                    else:
+                        salt_outputter.display_output(minion_result, out=out, opts=opts)
         
 
         failure = valid_return(results)
