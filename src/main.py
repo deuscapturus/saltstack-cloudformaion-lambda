@@ -16,7 +16,7 @@ def __init__(e):
     ResourceProperties of the lambda event.
     '''
 
-    global event, response_url, saltclient, salturl, eauth, username, password, batch, target, expr_form, function, arguments, batch_size, subset, kwargs, state_output
+    global event, response_url, saltclient, salturl, eauth, username, password, batch, target, expr_form, function, arguments, pillar, batch_size, subset, kwargs, state_output
 
     event = e
     saltclient = event['ResourceProperties'].get('SaltClient', 'local')
@@ -87,8 +87,6 @@ def local_client():
     }
     if kwargs:
         args.update(dict(kwarg.split("=") for kwarg in kwargs.split(" ")))
-    if arguments:
-        args['arg'] = arguments.split(" ")
     if batch_size:
         args['batch'] = batch_size
         args['client'] = 'local_batch'
@@ -104,6 +102,7 @@ def local_client():
         pillar_dict.update({"cloudformation-request-type": event['RequestType'] })
         pillar_dict.update({"cloudformation-stack-id": event['StackId'] })
 
+        args['arg'] = arguments.split(" ")
         args['arg'].append('pillar='+json.dumps(pillar_dict))
 
     return exec_rest_call(args)
@@ -114,8 +113,8 @@ def exec_rest_call(args):
     '''
 
     token = get_token()
-    headers = { 'X-Auth-Token' : token, 'Accept' : 'application/json'}
-    data = urllib.parse.urlencode(args).encode("utf-8")
+    headers = { 'X-Auth-Token' : token, 'Accept' : 'application/json', 'content-type': 'application/json'}
+    data = json.dumps(args).encode("utf-8")
     context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
     request = urllib.request.Request(salturl, data, headers=headers)
 
