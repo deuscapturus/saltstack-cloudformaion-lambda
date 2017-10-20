@@ -1,0 +1,104 @@
+Parameters:
+  LambdaARN:
+    Description: ARN to the Saltstack::Custom Lambda function
+    Type: String
+  SaltClient:
+    Description: For now always choose local
+    Type: String
+    Default: local
+  SaltUrl:
+    Description: 'URL to the salt-api. Example: https://10.100.1.1:8000'
+    Type: String
+    Default: https://10.100.1.1:8000
+  Eauth:
+    Description: LDAP or PAM
+    Type: String
+    Default: pam
+    AllowedValues:
+    - ldap
+    - pam
+  Username:
+    Description: saltstack username
+    Type: String
+  Password:
+    Description: Password for the test-ping-user
+    Type: String
+    NoEcho: true
+  Target:
+    Description: salt target.  Example roles:narwhal or i-0d2a7cb5aae264721
+    Type: String
+  ExprForm:
+    Description: Target type
+    Type: String
+    Default: glob
+    AllowedValues:
+    - glob
+    - grain
+    - list
+    - pillar
+  Function:
+    Description: 'Saltstack function. Example: state.apply'
+    Type: String
+  Arguments:
+    Description: Argument for the salt module. for state.sls this will be the name
+      of the state.
+    Type: String
+    Default: ''
+  BatchSize:
+    Description: 'Salt will apply the module to minion in batches as specified here.  Select
+      a number or percentage.  Example: 50% or 1'
+    Type: String
+    Default: ''
+  Subset:
+    Description: Pick a random number of minions from this parameter from the target
+    Type: String
+    Default: ''
+  Pillar:
+    Description: Pillar as a JSON string
+    Type: String
+    Default: "{}"
+  Kwargs:
+    Description: Extra arguments
+    Type: String
+    Default: ''
+  StateOutput:
+    Description: 'Saltstack function. Example: state.apply'
+    Type: String
+    Default: ''
+    AllowedValues:
+    - changes
+    - ''
+Resources:
+  SaltStackRun:
+    Type: Custom::SaltStack
+    Properties:
+      ServiceToken:
+        Ref: LambdaARN
+      SaltClient:
+        Ref: SaltClient
+      SaltUrl:
+        Ref: SaltUrl
+      Eauth:
+        Ref: Eauth
+      Username:
+        Ref: Username
+      Password:
+        Ref: Password
+      Target:
+        Ref: Target
+      ExprForm:
+        Ref: ExprForm
+      Function:
+        Ref: Function
+      Arguments:
+        Ref: Arguments
+      BatchSize:
+        Ref: BatchSize
+      Subset:
+        Ref: Subset
+      Kwargs:
+        Ref: Kwargs
+      Pillar:
+        Ref: Pillar
+      StateOutput:
+        Ref: StateOutput

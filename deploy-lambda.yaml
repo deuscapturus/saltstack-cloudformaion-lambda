@@ -1,0 +1,58 @@
+Parameters:
+  SecurityGroup:
+    Description: A security group ID in the VPC to this Lambda access the Salt Master.
+    Type: String
+  SubnetID:
+    Description: The ID of VPC Subnet.  Must be an subnet with access to the Salt Master.
+    Type: String
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+  LambdaExecutionRolePolicies:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: root
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Resource: arn:aws:logs:*:*:*
+        - Effect: Allow
+          Action:
+          - ec2:CreateNetworkInterface
+          - ec2:DescribeNetworkInterfaces
+          - ec2:DeleteNetworkInterface
+          Resource: '*'
+      Roles:
+      - Ref: LambdaExecutionRole
+  Lamba:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: main.handler
+      Code: build
+      Runtime: python3.6
+      Timeout: '300'
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      VpcConfig:
+        SecurityGroupIds:
+          - Ref: SecurityGroup
+        SubnetIds:
+          - Ref: SubnetID
+

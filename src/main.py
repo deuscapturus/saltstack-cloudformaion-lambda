@@ -66,7 +66,7 @@ def return_s3_response(status, data={}, reason="None"):
                                 data=json_responseBody,
                                 headers=headers)
     except Exception as e:
-        raise SystemExit("{}".format(e))
+        raise SystemExit("Failed to send reponse to presigned s3 url {0}\n error: {1}".format(responseUrl, e))
 
     if status == "SUCCESS":
         sys.exit(0)
@@ -167,7 +167,7 @@ def normalize_local(results):
 
     e = {"return": []}
     for key, value in results['return'][0].items():
-        e['return'].append({key:value })
+        e['return'].append({key:str(value) })
     return e
 
 def valid_return(return_data):
@@ -261,6 +261,7 @@ def handler(event, context):
         failure = valid_return(results)
         
         if failure:
+            #TODO: Fix.  state.apply is always returning failed here.  even if all results are true.
             return_s3_response("FAILED", data=listdict_to_dict(results.get('return')), reason="False results found in return data")
         else:
             return_s3_response("SUCCESS", data=listdict_to_dict(results.get('return')))
