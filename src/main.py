@@ -67,10 +67,8 @@ def return_s3_response(status, data={}, reason="None"):
                                 headers=headers)
     except Exception as e:
         raise SystemExit("Failed to send reponse to presigned s3 url {0}\n error: {1}".format(responseUrl, e))
-
-    if status == "SUCCESS":
-        sys.exit(0)
-    else:
+    
+    if status != "SUCCESS":
         sys.exit(1)
 
 def local_client():
