@@ -156,20 +156,6 @@ def get_token():
         sys.stderr.write("Error Getting Token: " + str(e.reason))
         return_s3_response("FAILED", data=None, reason=str(e.reason))
 
-def normalize_local(results):
-    '''
-    Data is returned in different structure when in batch mode: https://github.com/saltstack/salt/issues/32459
-    Make these results the same shape as batch returns here
-    '''
-    
-    if type(results['return'][0]) is not dict:
-        return results
-
-    e = {"return": []}
-    for key, value in results['return'][0].items():
-        e['return'].append({key:str(value) })
-    return e
-
 def valid_return(return_data):
     '''
     Check the return data for any failures.  Since every salt module returns data in a different manner this will be hard to do accurately.
@@ -210,12 +196,17 @@ def valid_return(return_data):
     return(failure)
 
 def listdict_to_dict(listdict):
+    '''
+    Convert a list of dictionaries to a single dictionary with
+    string values.
+    '''
 
     if type(listdict[0]) is not dict:
         return listdict
     return_dict = {}
     for d in listdict:
-        return_dict.update(d)
+        for key, value in d.items():
+          return_dict.update({key: str(value)})
     return return_dict
 
 def handler(event, context):
@@ -238,30 +229,19 @@ def handler(event, context):
             opts.update({"state_verbose": False})
         else:
             opts.update({"state_verbose": True})
-        if not batch_size:
-            results = normalize_local(results)
         if function.startswith('state'):
             out="highstate"
         else:
             out=None
-    
         for minion_result in results['return']:
             if type(results['return'][0]) is not dict:
                 salt_outputter.display_output(results, out=out, opts=opts)
             else:
-                for minion, data in minion_result.items():
-                    if function.startswith('state'):
-                      if "ret" in data:
-                          data[minion] = data.pop('ret')
-                          salt_outputter.display_output(data, out=out, opts=opts)
-                    else:
-                        salt_outputter.display_output(minion_result, out=out, opts=opts)
-        
+                salt_outputter.display_output(minion_result, out=out, opts=opts)
 
         failure = valid_return(results)
         
         if failure:
-            #TODO: Fix.  state.apply is always returning failed here.  even if all results are true.
             return_s3_response("FAILED", data=listdict_to_dict(results.get('return')), reason="False results found in return data")
         else:
             return_s3_response("SUCCESS", data=listdict_to_dict(results.get('return')))
