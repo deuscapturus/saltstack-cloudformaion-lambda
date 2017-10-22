@@ -4,9 +4,17 @@ SaltStack Lambda Client for AWS Cloudformation Custom Resource
 Testing
 -------
 
-pip3 install python-lambda-local
+Edit ``event.json``.  Generate a pre-signed S3 URL and add it to ``ResponseURL``.
 
-python-lambda-local -t 30 src/main.py event.json
+  test/generate-presigned-s3-url.py --bucket mybucket --filename test1.json
+
+Install ``python-lambda-local``
+
+  pip3 install python-lambda-local
+
+Run test
+
+  python-lambda-local -t 30 src/main.py event.json
 
 Build
 -----
@@ -25,6 +33,8 @@ Build
 
 Deploy
 ------
+
+# Replace SecurityGroup and SubnetID with a subnet and security group allowing access to the salt-master.
 
   aws cloudformation deploy \
     --template-file packaged-deploy-lambda.yaml \
