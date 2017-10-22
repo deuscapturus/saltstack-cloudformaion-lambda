@@ -1,0 +1,39 @@
+Parameters:
+  LambdaARN:
+    Description: ARN to the Saltstack::Custom Lambda function
+    Type: String
+  Password:
+    Description: Password for the test-ping-user
+    Type: String
+    NoEcho: true
+Resources:
+  CreateInstance:
+    Type: "AWS::EC2::Instance"
+    Properties: 
+      ImageId: ami-2c1c0f55
+      InstanceType: t2.micro
+      KeyName: theo-laptop
+      SecurityGroupIds: 
+        - sg-a193afd8
+      UserData: String
+  HaproxyUpdate:
+    Type: Custom::SaltStack
+    Properties:
+      ServiceToken: 
+        Ref: LambdaARN
+      SaltClient: local
+      SaltUrl: http://172.31.17.15:8000
+      Eauth: pam
+      Username: cloudformation
+      Password:
+        Ref: Password
+      Target: ip-172-31-27-20.us-west-2.compute.internal
+      ExprForm: glob
+      Function: state.apply
+      Arguments: haproxy-formula
+      Pillar:
+        !Join [ "", [  '{"haproxy":{"cloudformation":{"enabled":true,"overwrite":true,"config_file_path":"/etc/haproxy/conf.d/cloudformation.cfg","frontends":{"cloudformation-1":{"name":"cloudformation-1","bind":"*:81","default_backend":"cloudformation-1"}},"backends":{"cloudformation-1":{"balance":"roundrobin","servers":{"cloudformaiton-1":{"host":"', !GetAtt CreateInstance.PrivateIp, '","port":81}}}}}}}' ] ]
+Outputs:
+  SaltStackHaproxy:
+    Description: State output from haproxy-formula
+    Value: !GetAtt HaproxyUpdate.ip-172-31-27-20.us-west-2.compute.internal
