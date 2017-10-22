@@ -80,7 +80,7 @@ Run
 References
 ----------
 
-python-lambda-local: https://pypi.python.org/pypi/python-lambda-local
-AWS lambda Py.. DANGER::thon: http://docs.aws.amazon.com/lambda/latest/dg/python-programming-model.html
-AWS Cloudformation Custom Resources: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cfn-customresource.html
+- python-lambda-local: https://pypi.python.org/pypi/python-lambda-local
+- AWS lambda Python: http://docs.aws.amazon.com/lambda/latest/dg/python-programming-model.html
+- AWS Cloudformation Custom Resources: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cfn-customresource.html
 
