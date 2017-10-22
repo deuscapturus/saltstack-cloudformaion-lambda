@@ -25,8 +25,10 @@ Run test
 Build
 -----
 
-# NOTE: S3 Bucket must already exist
-# Set any required AWS CLI env variables. http://docs.aws.amazon.com/cli/latest/userguide/cli-environment.html
+.. NOTE::
+   S3 Bucket must already exist
+
+Set any required AWS CLI env variables. http://docs.aws.amazon.com/cli/latest/userguide/cli-environment.html
 
 .. code::
 
