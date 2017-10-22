@@ -44,7 +44,7 @@ Set any required AWS CLI env variables. http://docs.aws.amazon.com/cli/latest/us
 Deploy
 ------
 
-# Replace SecurityGroup and SubnetID with a subnet and security group allowing access to the salt-master.
+Replace SecurityGroup and SubnetID with a subnet and security group allowing access to the salt-master.
 
 .. code::
 
@@ -59,7 +59,8 @@ Deploy
 Run
 ---
 
-# NOTE: Your VPC must have access to S3.  Make sure it has a NAT gateway or a VPC endpoint to s3.
+.. NOTE::
+   Your VPC must have access to S3.  Make sure it has a NAT gateway or a VPC endpoint to s3.
 
 .. code::
 
@@ -80,6 +81,6 @@ References
 ----------
 
 python-lambda-local: https://pypi.python.org/pypi/python-lambda-local
-AWS lambda Python: http://docs.aws.amazon.com/lambda/latest/dg/python-programming-model.html
+AWS lambda Py.. DANGER::thon: http://docs.aws.amazon.com/lambda/latest/dg/python-programming-model.html
 AWS Cloudformation Custom Resources: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cfn-customresource.html
 
