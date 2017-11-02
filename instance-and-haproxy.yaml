@@ -1,7 +1,4 @@
 Parameters:
-  LambdaARN:
-    Description: ARN to the Saltstack::Custom Lambda function
-    Type: String
   Password:
     Description: Password for the test-ping-user
     Type: String
@@ -19,8 +16,7 @@ Resources:
   HaproxyUpdate:
     Type: Custom::SaltStack
     Properties:
-      ServiceToken: 
-        Ref: LambdaARN
+      ServiceToken: !ImportValue SaltStackLambdaARN
       SaltClient: local
       SaltUrl: http://172.31.17.15:8000
       Eauth: pam
