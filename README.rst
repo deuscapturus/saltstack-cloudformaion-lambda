@@ -6,21 +6,31 @@ Testing
 
 Edit ``event.json``.  Generate a pre-signed S3 URL and add it to ``ResponseURL``.
 
+.. code::
+
   test/generate-presigned-s3-url.py --bucket mybucket --filename test1.json
 
 Install ``python-lambda-local``
 
+.. code::
+
   pip3 install python-lambda-local
 
 Run test
+
+.. code::
 
   python-lambda-local -t 30 src/main.py event.json
 
 Build
 -----
 
-# NOTE: S3 Bucket must already exist
-# Set any required AWS CLI env variables. http://docs.aws.amazon.com/cli/latest/userguide/cli-environment.html
+.. NOTE::
+   S3 Bucket must already exist
+
+Set any required AWS CLI env variables. http://docs.aws.amazon.com/cli/latest/userguide/cli-environment.html
+
+.. code::
 
   ./build.sh
 
@@ -34,7 +44,9 @@ Build
 Deploy
 ------
 
-# Replace SecurityGroup and SubnetID with a subnet and security group allowing access to the salt-master.
+Replace SecurityGroup and SubnetID with a subnet and security group allowing access to the salt-master.
+
+.. code::
 
   aws cloudformation deploy \
     --template-file packaged-deploy-lambda.yaml \
@@ -47,7 +59,10 @@ Deploy
 Run
 ---
 
-# NOTE: Your VPC must have access to S3.  Make sure it has a NAT gateway or a VPC endpoint to s3.
+.. NOTE::
+   Your VPC must have access to S3.  Make sure it has a NAT gateway or a VPC endpoint to s3.
+
+.. code::
 
   aws cloudformation deploy \
     --template-file resource-example.yaml \
@@ -65,7 +80,7 @@ Run
 References
 ----------
 
-python-lambda-local: https://pypi.python.org/pypi/python-lambda-local
-AWS lambda Python: http://docs.aws.amazon.com/lambda/latest/dg/python-programming-model.html
-AWS Cloudformation Custom Resources: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cfn-customresource.html
+- python-lambda-local: https://pypi.python.org/pypi/python-lambda-local
+- AWS lambda Python: http://docs.aws.amazon.com/lambda/latest/dg/python-programming-model.html
+- AWS Cloudformation Custom Resources: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cfn-customresource.html
 
