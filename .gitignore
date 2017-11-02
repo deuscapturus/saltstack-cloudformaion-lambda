@@ -3,3 +3,4 @@ build
 *.swp
 *event.json
 packaged-deploy-lambda.yaml
+src/__pycache__
