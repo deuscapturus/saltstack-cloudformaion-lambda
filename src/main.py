@@ -231,10 +231,11 @@ def handler(event, context):
             out="highstate"
         else:
             out=None
-        for minion_result in results['return']:
-            if type(results['return'][0]) is not dict:
-                salt_outputter.display_output(results, out=out, opts=opts)
-            else:
+
+        if type(results['return'][0]) is not dict:
+            salt_outputter.display_output(results, out=out, opts=opts)
+        else:
+            for minion_result in results['return']:
                 salt_outputter.display_output(minion_result, out=out, opts=opts)
 
         failure = valid_return(results)

@@ -39,7 +39,7 @@ Resources:
           Resource: '*'
       Roles:
       - Ref: LambdaExecutionRole
-  Lamba:
+  Lambda:
     Type: AWS::Lambda::Function
     Properties:
       Handler: main.handler
@@ -55,4 +55,9 @@ Resources:
           - Ref: SecurityGroup
         SubnetIds:
           - Ref: SubnetID
-
+Outputs:
+  SaltStackLambdaARN:
+    Description: ARN for the SaltStack Lambda function for the SaltStack Cloudformation custom resource
+    Value: !GetAtt Lambda.Arn
+    Export:
+      Name: SaltStackLambdaARN
